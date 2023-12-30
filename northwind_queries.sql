@@ -5,6 +5,9 @@ USE northwind;
 	-Que tengan stock en el almacén, y al mismo tiempo que sus precios unitarios estén entre 50 y 100. 
 	-Por último, ordena los resultados por código de proveedor de forma ascendente.*/
 
+/* Anidamos las condiciones: creando tablas que cumplan las condiciones que queremos
+(adjudicándoles un nombre para diferenciarlas) y verificando si los elementos que buscamos están en ellas con WHERE - IN*/
+
 SELECT *
 	FROM products AS p1
     WHERE supplier_id IN (SELECT supplier_id
@@ -23,7 +26,12 @@ SELECT *
 /*2.Devuelve:
 -El nombre y apellidos y el id de los empleados con códigos entre el 3 y el 6, 
 -Además que hayan vendido a clientes que tengan códigos que comiencen con las letras de la A hasta la G. 
--Por último, en esta búsqueda queremos filtrar solo por aquellos envíos que la fecha de pedido este comprendida entre el 22 y el 31 de Diciembre de cualquier año.*/
+-Por último, en esta búsqueda queremos filtrar solo por aquellos envíos que la fecha de pedido 
+este comprendida entre el 22 y el 31 de Diciembre de cualquier año.*/
+
+/*en este ejercicio seleccionamos ya de una tabla filtrada antes de usar WHERE - IN para filtrar. 
+Con esta manera de filtrar comprobamos la condición en una tabla distinta a la inicial sin necesidad de hacer un JOIN
+Además ya nos agrupa por empleado*/
 
 SELECT employees2.employee_id, employees2.first_name, employees2.last_name
 	FROM (SELECT *
@@ -33,6 +41,18 @@ SELECT employees2.employee_id, employees2.first_name, employees2.last_name
 							FROM orders
                             WHERE MONTH(order_date) = 12 AND DAY(order_date) BETWEEN 22 AND 31
                             AND customer_id REGEXP '^[A-G]'); 
+
+/*De la manera anterior comprobamos los empleados que cumplen con las condiciones
+De la manera siguiente comprobamos todas las operaciones que cumplen la condiciones y así sabemos que los filtros han funcionado correctamente*/
+
+SELECT employees.employee_id, employees.first_name, employees.last_name, orders.customer_id, orders.order_date
+	FROM employees
+	INNER JOIN orders
+	ON employees.employee_id = orders.employee_id
+    WHERE MONTH(orders.order_date) = 12 
+    AND DAY(orders.order_date) BETWEEN 22 AND 31
+	AND orders.customer_id REGEXP '^[A-G]'
+	AND orders.employee_id BETWEEN 3 AND 6;
 							
     
 
@@ -41,13 +61,13 @@ SELECT employees2.employee_id, employees2.first_name, employees2.last_name
 Muestra el id del la orden, el id del producto, el nombre del producto, el precio unitario, la cantidad, el descuento
 y el precio de venta después de haber aplicado el descuento.*/
  
- SELECT order_details.order_id, order_details.product_id, products.product_name, order_details.unit_price, order_details.quantity, 
-			ROUND(order_details.discount, 3) AS discount, 
-			ROUND((order_details.unit_price * order_details.discount), 2) AS unit_price_discount, 
-            ROUND((order_details.unit_price * order_details.quantity * order_details.discount), 2) AS total_price
+SELECT order_details.order_id, order_details.product_id, products.product_name, order_details.unit_price, order_details.quantity, 
+		order_details.discount * 100 AS 'discount_%', 
+		ROUND((order_details.unit_price * order_details.discount), 2) AS unit_price_discount, 
+		ROUND(((order_details.unit_price * (1 - order_details.discount)) * order_details.quantity), 2) AS total_price
 	FROM order_details
-    INNER JOIN products
-    ON order_details.product_id = products.product_id;
+	INNER JOIN products
+	ON order_details.product_id = products.product_id;
  
  
 /*4.Usando una subconsulta:
@@ -61,24 +81,27 @@ SELECT product_id, product_name, unit_price
                             
 /*-¿Qué productos ha vendido cada empleado y cuál es la cantidad vendida de cada uno de ellos?*/
 
-SELECT orders.employee_id, order_details.quantity, order_details.product_id
-	FROM  orders
-    NATURAL JOIN order_details;
+/*Hay que agrupar por un elemento del SELECT de cada tabla, de lo contrario el GROUP BY no reconoce ambos a pesar del JOIN*/
+
+SELECT orders.employee_id, order_details.product_id, SUM(order_details.quantity)
+FROM orders
+NATURAL JOIN order_details
+GROUP BY orders.employee_id, order_details.product_id;
                               
 
 /*5.Basándonos en la query anterior:
 -¿Qué empleado es el que vende más productos? Soluciona este ejercicio con una subquery*/
 
-SELECT employee_id, quantity
-FROM orders AS P1
-NATURAL JOIN order_details
-WHERE quantity >= ALL (SELECT SUM(order_details.quantity)
-						FROM  orders AS P2
-						NATURAL JOIN order_details
-						WHERE P1.employee_id = P2.employee_id);
-            
+SELECT ventas_empleado.employee_id, SUM(ventas_empleado.total_ventas) AS total
+FROM (SELECT orders.employee_id, order_details.product_id, SUM(order_details.quantity) AS total_ventas
+		FROM orders
+		NATURAL JOIN order_details
+		GROUP BY orders.employee_id, order_details.product_id) AS ventas_empleado
+        GROUP BY ventas_empleado.employee_id
+        ORDER BY total DESC
+        LIMIT 1;
 
-    
+
 /*BONUS ¿Podríais solucionar este mismo ejercicio con una CTE?*/
 
 WITH consulta1 AS (SELECT employee_id, SUM(order_details.quantity) AS CantidadxVendedor 
