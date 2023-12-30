@@ -1,30 +1,19 @@
-# This repository is currently under revision
-
-# PYTHON-SQL EXERCICES II (SPANISH)
+SQL EXERCICES (SPANISH)
 
 ## Description
 
-This exercices show that proper Python and SQL skills are acquired and they were meant to be solved in the most efficient way.
+nba_db.sql: Creation of a simple database and some easy queries. 
 
-Feel free to check them to improve your skills as well
+northwind_creation.sql: Creation of a database, including some useful constraints (code provided by Adalab)
+
+northwind_queries.sql: Learn how to use subqueries
+
+Feel free to check this in order to improve your SQL skills
 
 
 ## Installation
 
-Python version: 3.9.7
-
-Anaconda3
-
 MySQL Workbench version: 8
-
-## Libraries
-
-
-## Usage
-
-SQL queries must be run in MySQL Workbench. 
-
-Check repository "University database" to learn how to run queries directly from a notebook using Python.
 
 ## Credits
 
